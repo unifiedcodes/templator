@@ -1,15 +1,19 @@
-// reactive.js
-// reactive.js
+const proxyCache = new WeakMap();
+
 export function reactive(obj, onChange, basePath = "") {
   if (typeof obj !== "object" || obj === null) {
     return obj;
   }
 
-  return new Proxy(obj, {
+  // 🔥 return cached proxy
+  if (proxyCache.has(obj)) {
+    return proxyCache.get(obj);
+  }
+
+  const proxy = new Proxy(obj, {
     get(target, key) {
       const value = target[key];
 
-      // 🔥 wrap nested object on access
       if (typeof value === "object" && value !== null) {
         const newPath = basePath ? `${basePath}.${key}` : key;
         return reactive(value, onChange, newPath);
@@ -28,4 +32,8 @@ export function reactive(obj, onChange, basePath = "") {
       return true;
     },
   });
+
+  proxyCache.set(obj, proxy);
+
+  return proxy;
 }

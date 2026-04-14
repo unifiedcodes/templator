@@ -69,7 +69,7 @@ export default class Templator {
 
     const root = fragment.firstElementChild || fragment;
 
-    // 🔥 runtimes
+    // runtimes
     const runtimes = this.instructions.map((inst) => ({
       node: this.resolveNode(fragment, inst.path),
       update: inst.update,
@@ -77,10 +77,10 @@ export default class Templator {
       scope: null, // assigned after proxy
     }));
 
-    // 🔥 depsMap
+    // depsMap
     const depsMap = this.buildDepsMap(runtimes);
 
-    // 🔥 onChange handler
+    // onChange handler
     const onChange = (path) => {
       const list = depsMap[path];
       if (list) {
@@ -88,7 +88,7 @@ export default class Templator {
       }
     };
 
-    // 🔥 reactive scope (shallow for now)
+    // reactive scope
     const scope = reactive(data, onChange);
 
     // assign scope to runtimes
