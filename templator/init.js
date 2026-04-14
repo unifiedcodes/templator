@@ -10,10 +10,6 @@ const instance = t.create({
   },
 });
 
-instance.set({
-  user: {
-    name: "someusername",
-  },
-});
+instance.scope.user.name = "something";
 
 console.log(instance);

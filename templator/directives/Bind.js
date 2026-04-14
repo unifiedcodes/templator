@@ -13,6 +13,7 @@ export default class Bind extends Directive {
 
     return {
       path,
+      deps: [expr],
 
       // compiled instruction
       update: (node, scope) => {

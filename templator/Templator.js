@@ -2,6 +2,7 @@
 import Walker from "./Walker.js";
 import Renderer from "./Renderer.js";
 import Bind from "./directives/Bind.js";
+import { reactive } from "./Reactive.js";
 
 export default class Templator {
   constructor(template) {
@@ -20,7 +21,7 @@ export default class Templator {
     this.walker = new Walker(this.directiveMap, this);
     this.renderer = new Renderer();
 
-    // 🔥 compile on actual structure
+    // compile on actual structure
     this.instructions = this.walker.walk(this.template);
   }
 
@@ -43,46 +44,73 @@ export default class Templator {
     return node;
   }
 
-  create(data = {}) {
-    const scope = data;
+  buildDepsMap(runtimes) {
+    const map = {};
 
-    let root, fragment;
+    for (const r of runtimes) {
+      if (!r.deps) continue;
 
-    if (this.isTemplate) {
-      // ✅ clone mode
-      fragment = this.template.cloneNode(true);
-      root = fragment.firstElementChild;
-    } else {
-      // ✅ mount mode
-      root = this.template;
-      fragment = this.template;
+      for (const dep of r.deps) {
+        if (!map[dep]) {
+          map[dep] = [];
+        }
+
+        map[dep].push(r);
+      }
     }
 
+    return map;
+  }
+
+  create(data = {}) {
+    const fragment = this.isTemplate
+      ? this.template.cloneNode(true)
+      : this.template;
+
+    const root = fragment.firstElementChild || fragment;
+
+    // 🔥 runtimes
     const runtimes = this.instructions.map((inst) => ({
       node: this.resolveNode(fragment, inst.path),
       update: inst.update,
-      scope,
+      deps: inst.deps,
+      scope: null, // assigned after proxy
     }));
 
+    // 🔥 depsMap
+    const depsMap = this.buildDepsMap(runtimes);
+
+    // 🔥 onChange handler
+    const onChange = (path) => {
+      const list = depsMap[path];
+      if (list) {
+        this.renderer.run(list);
+      }
+    };
+
+    // 🔥 reactive scope (shallow for now)
+    const scope = reactive(data, onChange);
+
+    // assign scope to runtimes
+    for (const r of runtimes) {
+      r.scope = scope;
+    }
+
+    // initial render
     this.renderer.run(runtimes);
 
     return {
       root,
       fragment,
 
-      update: () => {
-        this.renderer.run(runtimes);
-      },
-
-      set: (newData) => {
-        Object.assign(scope, newData);
-        this.renderer.run(runtimes);
-      },
-
       appendTo: (parent) => {
         if (this.isTemplate) {
           parent.appendChild(fragment);
         }
+      },
+
+      get scope() {
+        return scope;
       },
     };
   }
