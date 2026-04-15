@@ -1,3 +1,4 @@
+// Test
 import Templator from "./Templator.js";
 
 const el = document.querySelector("#app");
@@ -16,9 +17,24 @@ setTimeout(() => {
 
   instance.scope.items[0].name = "Updated Harshit";
 
-  // instance.scope.items = [
-  //   { name: "Harshit u" },
-  //   { name: "Rahul u" },
-  //   { name: "Someone u" },
-  // ];
+  instance.scope.items = generateItems(100000);
 }, 1000);
+
+function generateItems(numberOfItems) {
+  const randomName = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyz";
+    const length = Math.floor(Math.random() * 6) + 5; // 5–10 chars
+    let name = "";
+
+    for (let i = 0; i < length; i++) {
+      name += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    // Capitalize first letter
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
+
+  return Array.from({ length: numberOfItems }, () => ({
+    name: randomName(),
+  }));
+}
