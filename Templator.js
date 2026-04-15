@@ -1,21 +1,26 @@
 // Templator.js
 import Walker from "./Walker.js";
 import Renderer from "./Renderer.js";
-import Bind from "./directives/Bind.js";
 import { reactive } from "./Reactive.js";
+import Bind from "./directives/Bind.js";
+import Foreach from "./directives/Foreach.js";
 
 export default class Templator {
-  constructor(template) {
+  constructor(template, options = {}) {
     if (!(template instanceof Node)) {
       throw new Error("Template must be a DOM node");
     }
 
-    this.isTemplate = template instanceof HTMLTemplateElement;
+    this.isTemplate =
+      options.forceTemplate || template instanceof HTMLTemplateElement;
 
-    this.template = this.normalize(template);
+    this.useSelfAsRoot = options.useSelfAsRoot || false;
+
+    this.template = template;
 
     this.directiveMap = {
       "t-bind": new Bind(),
+      "t-foreach": new Foreach(),
     };
 
     this.walker = new Walker(this.directiveMap, this);
@@ -44,6 +49,13 @@ export default class Templator {
     return node;
   }
 
+  createChildTemplator(template) {
+    return new this.constructor(template, {
+      forceTemplate: true,
+      useSelfAsRoot: true,
+    });
+  }
+
   buildDepsMap(runtimes) {
     const map = {};
 
@@ -62,20 +74,54 @@ export default class Templator {
     return map;
   }
 
-  create(data = {}) {
-    const fragment = this.isTemplate
-      ? this.template.cloneNode(true)
-      : this.template;
+  normalizeNode() {
+    let fragment, root;
 
-    const root = fragment.firstElementChild || fragment;
+    if (this.isTemplate) {
+      if (this.template instanceof HTMLTemplateElement) {
+        fragment = this.template.content.cloneNode(true);
+        root = fragment.firstElementChild;
+      } else {
+        // clone directly
+        const cloned = this.template.cloneNode(true);
+
+        fragment = cloned;
+
+        // root strategy
+        root = this.useSelfAsRoot ? cloned : cloned.firstElementChild;
+      }
+    } else {
+      // mount mode
+      fragment = this.template;
+      root = this.template;
+    }
+
+    return { fragment, root };
+  }
+
+  create(data = {}) {
+    const { fragment, root } = this.normalizeNode();
 
     // runtimes
-    const runtimes = this.instructions.map((inst) => ({
-      node: this.resolveNode(fragment, inst.path),
-      update: inst.update,
-      deps: inst.deps,
-      scope: null, // assigned after proxy
-    }));
+    const runtimes = this.instructions.map((inst) => {
+      const node = this.resolveNode(fragment, inst.path);
+
+      const runtime = {
+        node,
+        update: inst.update,
+        deps: inst.deps,
+        scope: null,
+        anchor: null,
+        instances: null,
+      };
+
+      // call setup if exists
+      if (inst.setup) {
+        inst.setup(runtime, node);
+      }
+
+      return runtime;
+    });
 
     // depsMap
     const depsMap = this.buildDepsMap(runtimes);
