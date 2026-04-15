@@ -7,17 +7,18 @@ const t = new Templator(el);
 
 const instance = t.create({
   user: {
-    name: "Harshit",
+    name: "someone",
   },
-  items: [{ name: "Harshit" }, { name: "Rahul" }, { name: "Someone" }],
+  items: [{ name: "a" }, { name: "b" }, { name: "c" }],
 });
 
-setTimeout(() => {
-  instance.scope.user.name = "something";
+console.log("-------------");
 
+setTimeout(() => {
+  instance.scope.user.name = generateItems(1)[0].name;
   instance.scope.items[0].name = "Updated Harshit";
 
-  instance.scope.items = generateItems(100000);
+  console.log(JSON.parse(JSON.stringify(instance.scope)));
 }, 1000);
 
 function generateItems(numberOfItems) {
@@ -31,7 +32,7 @@ function generateItems(numberOfItems) {
     }
 
     // Capitalize first letter
-    return name.charAt(0).toUpperCase() + name.slice(1);
+    return name;
   };
 
   return Array.from({ length: numberOfItems }, () => ({

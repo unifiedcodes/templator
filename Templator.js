@@ -99,7 +99,7 @@ export default class Templator {
     return { fragment, root };
   }
 
-  create(data = {}) {
+  create(data = {}, parentScope = null) {
     const { fragment, root } = this.normalizeNode();
 
     // runtimes
@@ -128,14 +128,23 @@ export default class Templator {
 
     // onChange handler
     const onChange = (path) => {
-      const list = depsMap[path];
-      if (list) {
+      const list = [];
+
+      for (const key in depsMap) {
+        if (path.startsWith(key)) {
+          list.push(...depsMap[key]);
+        }
+      }
+
+      console.log(list);
+
+      if (list.length) {
         this.renderer.run(list);
       }
     };
 
     // reactive scope
-    const scope = reactive(data, onChange);
+    const scope = parentScope || reactive(data, onChange);
 
     // assign scope to runtimes
     for (const r of runtimes) {

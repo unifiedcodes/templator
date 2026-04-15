@@ -33,6 +33,8 @@ export default class Foreach extends Directive {
       },
 
       update(runtime) {
+        console.log("foreach update called");
+
         const { anchor, scope } = runtime;
         const parent = anchor.parentNode;
 
@@ -52,7 +54,7 @@ export default class Foreach extends Directive {
           const childScope = Object.create(scope);
           childScope[itemName] = item;
 
-          const inst = childTemplator.create(childScope);
+          const inst = childTemplator.create(childScope, scope);
 
           runtime.instances.push(inst);
           fragment.appendChild(inst.root);

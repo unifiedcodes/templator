@@ -17,6 +17,8 @@ export default class Bind extends Directive {
 
       // compiled instruction
       update: (node, scope) => {
+        console.log("⚡ Bind update triggered", node);
+
         const result = getter(scope);
         node.textContent = result ?? "";
       },
